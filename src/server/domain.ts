@@ -1,0 +1,191 @@
+/**
+ * Types métier partagés par les repositories et les dashboards.
+ * Ils reprennent le modèle de données du cahier des charges (§11) ;
+ * `password_hash` n'y figure pas : il ne quitte jamais la couche d'accès aux données.
+ */
+
+export const COMPANY_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"] as const;
+export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
+
+export type Company = {
+  id: string;
+  publicId: string;
+  name: string;
+  email: string;
+  phone: string;
+  logoUrl: string | null;
+  status: CompanyStatus;
+  createdAt: Date;
+};
+
+export type Rating = 1 | 2 | 3 | 4 | 5;
+
+export type Review = {
+  id: string;
+  companyId: string;
+  rating: Rating;
+  comment: string | null;
+  customerFirstName: string | null;
+  customerLastName: string | null;
+  customerPhone: string | null;
+  /** Date de visite au format ISO `AAAA-MM-JJ`. */
+  visitDate: string;
+  reviewerType?: "anonymous" | "identified";
+  createdAt: Date;
+  /**
+   * Réponses aux questions personnalisées du formulaire, indexées par
+   * identifiant de question. Absent pour les avis de démonstration.
+   */
+  answers?: Record<string, string>;
+};
+
+export type AdminRole = "admin" | "dirigeant";
+
+export const ADMIN_MODULES = [
+  "dashboard",
+  "companies",
+  "finances",
+  "users",
+  "audit",
+  "reports",
+] as const;
+export type AdminModule = (typeof ADMIN_MODULES)[number];
+
+export const ADMIN_PERMISSION_LEVELS = ["none", "read", "manage"] as const;
+export type AdminPermissionLevel = (typeof ADMIN_PERMISSION_LEVELS)[number];
+export type AdminPermissions = Record<AdminModule, AdminPermissionLevel>;
+
+export type Admin = {
+  id: string;
+  email: string;
+  role?: AdminRole;
+  permissions: AdminPermissions;
+  createdAt?: Date;
+};
+
+/** Rôle personnalisé : un nom et un niveau par module (module 6). */
+export type AdminRoleDefinition = {
+  id: string;
+  name: string;
+  permissions: AdminPermissions;
+  createdAt: Date;
+};
+
+export type AdminMember = {
+  id: string;
+  userId: string;
+  email: string;
+  role: AdminRole;
+  /** Rôle personnalisé assigné, s'il y en a un. */
+  roleId: string | null;
+  permissions: AdminPermissions;
+  createdAt: Date;
+};
+
+export type Remark = {
+  id: string;
+  companyId: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  message: string;
+  createdAt: Date;
+};
+
+export const QUESTION_TYPES = ["rating", "text", "date"] as const;
+export type QuestionType = (typeof QUESTION_TYPES)[number];
+
+/** Nombre maximal de questions dans un formulaire d'avis. */
+export const MAX_FORM_QUESTIONS = 5;
+
+export type ReviewFormQuestion = {
+  id: string;
+  type: QuestionType;
+  label: string;
+  required: boolean;
+};
+
+/**
+ * Personnalisation du formulaire d'avis public (Studio du formulaire). L'entreprise
+ * compose jusqu'à `MAX_FORM_QUESTIONS` questions ; une seule note (étoiles)
+ * est imposée pour que les statistiques du tableau de bord restent calculables.
+ */
+export type ReviewFormConfig = {
+  questions: ReviewFormQuestion[];
+  /** Titre de l'écran de remerciement. */
+  thanksTitle: string;
+  /** Message de l'écran de remerciement. */
+  thanksMessage: string;
+  /** Autorise le dépôt d'un avis sans donner son identité. */
+  allowAnonymous?: boolean;
+  /** Affiche le second choix « Laisser une remarque ». */
+  allowRemarks?: boolean;
+};
+
+export const AUDIT_ACTIONS = [
+  "SUSPEND",
+  "REACTIVATE",
+  "DELETE",
+  "INVITE_ADMIN",
+  "UPDATE_ADMIN_ROLE",
+  "REMOVE_ADMIN",
+  "UPDATE_SUBSCRIPTION",
+  "DOWNLOAD_REPORT",
+  "PAYMENT",
+  "CREATE_ROLE",
+  "UPDATE_ROLE",
+] as const;
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+export type SubscriptionPlan = "trial" | "pro" | "enterprise";
+export type SubscriptionPeriod = "monthly" | "annual" | "trial";
+export type SubscriptionStatus =
+  | "TRIALING"
+  | "ACTIVE"
+  | "CANCELED"
+  | "EXPIRED"
+  | "SUSPENDED";
+
+export type CompanySubscription = {
+  companyId: string;
+  plan: SubscriptionPlan;
+  period: SubscriptionPeriod;
+  amount: number;
+  status: SubscriptionStatus;
+  startedAt: Date;
+  currentPeriodEnd: Date | null;
+  /** Date de fin de l'essai gratuit (si period === 'trial'). */
+  trialEndDate?: Date;
+  canceledAt?: Date;
+  updatedAt: Date;
+  adminEmail?: string;
+};
+
+export type SerializedSubscription = {
+  companyId: string;
+  plan: SubscriptionPlan;
+  period: SubscriptionPeriod;
+  amount: number;
+  status: SubscriptionStatus;
+  startedAt: string;
+  currentPeriodEnd: string | null;
+  /** Date de fin de l'essai gratuit (ISO string). */
+  trialEndDate?: string;
+  canceledAt?: string;
+  updatedAt: string;
+  adminEmail?: string;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  adminId: string;
+  action: AuditAction;
+  targetCompanyId: string | null;
+  metadata: Record<string, string>;
+  createdAt: Date;
+};
+
+export type Page<T> = {
+  items: T[];
+  total: number;
+};
